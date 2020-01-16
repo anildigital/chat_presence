@@ -1,0 +1,17 @@
+<%= if Map.has_key?(assigns, :current_user) do %>
+  <!-- The list of messages will appear here: -->
+  <ul id='msg-list' class='row' style='display:block;list-style: none; min-height:200px; padding: 10px;'></ul>
+
+  <div class="row">
+    <div class="col-xs-3">
+      <input type="text" id="name" class="form-control" disabled value="<%= assigns[:current_user].first_name %>" autofocus>
+    </div>
+    <div class="col-xs-9">
+      <input type="text" id="msg" class="form-control" placeholder="Your Message">
+    </div>
+  </div>
+
+<% end %>
+
+
+<script>window.roomId = "<%= @room.id %>";</script>

@@ -25,6 +25,11 @@ defmodule ChatWeb.Router do
 
     get("/register", RegistrationController, :new)
     post("/register", RegistrationController, :create)
+
+    get("/rooms/new", PageController, :new_room)
+    get("/rooms/:room_id", PageController, :get_room)
+
+    post("/rooms/create", PageController, :create_room)
   end
 
   # Other scopes may use custom stacks.

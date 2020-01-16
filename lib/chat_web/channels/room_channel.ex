@@ -1,10 +1,10 @@
 defmodule ChatWeb.RoomChannel do
   use ChatWeb, :channel
 
-  def join("room:lobby", payload, socket) do
+  def join("room:" <> room_id, payload, socket) do
     if authorized?(payload) do
       send(self(), :after_join)
-      {:ok, socket}
+      {:ok, assign(socket, :room_id, room_id)}
     else
       {:error, %{reason: "unauthorized"}}
     end
@@ -18,16 +18,20 @@ defmodule ChatWeb.RoomChannel do
 
   # It is also common to receive messages from the client and
   # broadcast to everyone in the current topic (room:lobby).
-  def handle_in("shout", payload, socket) do
-    Chat.Message.changeset(%Chat.Message{}, payload) |> Chat.Repo.insert()
-    broadcast(socket, "shout", payload)
+  def handle_in("message:add", payload, socket) do
+    room_id = socket.assigns[:room_id]
+    payload = Map.put(payload, "room_id", room_id)
+    Chat.Messages.Message.changeset(%Chat.Messages.Message{}, payload) |> Chat.Repo.insert()
+    broadcast(socket, "room:#{room_id}:new_message", payload)
     {:noreply, socket}
   end
 
   def handle_info(:after_join, socket) do
-    Chat.Message.get_messages()
+    room_id = socket.assigns[:room_id]
+
+    Chat.Messages.get_messages(room_id)
     |> Enum.each(fn msg ->
-      push(socket, "shout", %{
+      push(socket, "room:#{room_id}:new_message", %{
         name: msg.name,
         message: msg.message
       })
