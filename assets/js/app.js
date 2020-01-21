@@ -19,6 +19,13 @@ let roomId = window.roomId;
 
 import socket from "./socket"
 
+import {Presence} from "phoenix"
+
+let presences = {};
+let userTyping = false;
+var typingTimer
+const timeout = 3000;
+
 if (roomId) {
   let channel = socket.channel(`room:${roomId}`, {}); // connect to chat "room"
 
@@ -32,6 +39,67 @@ if (roomId) {
     li.innerHTML = '<b>' + name + '</b>: ' + payload.message; // set li contents
     ul.appendChild(li);                    // append to list
   });
+
+  const displayUsers = (presences) => {
+    let usersOnline = Presence.list(presences, (_id, {
+      metas: [
+        user, ...rest
+      ]
+    }) => {
+      var typingTemplate = ''
+      if (user.typing) {
+        typingTemplate = ' <i>(Typing...)</i>'
+      }
+      return `
+        <div id="user-${user.user_id}">${user.username} ${typingTemplate}</div>
+      `
+    }).join("")
+
+    document.querySelector('#users-online').innerHTML = usersOnline
+  }
+
+  channel.on("presence_state", state => {
+    presences = Presence.syncState(presences, state)
+    console.log(presences)
+    displayUsers(presences)
+  })
+
+  channel.on("presence_diff", diff => {
+    presences = Presence.syncDiff(presences, diff)
+    console.log(presences)
+    displayUsers(presences)
+  })
+
+
+  document.querySelector('#msg').addEventListener('keydown', () => {
+    userStartsTyping()
+    clearTimeout(typingTimer)
+  })
+  document.querySelector('#msg').addEventListener('keyup', () => {
+    clearTimeout(typingTimer)
+    typingTimer = setTimeout(userStopTyping, timeout)
+  })
+
+  const userStartsTyping = () => {
+    if (userTyping) {
+      return
+    }
+
+    userTyping = true
+    channel.push('user:typing', {
+      typing: true
+    })
+  }
+
+  const userStopTyping = () => {
+    clearTimeout(typingTimer)
+    userTyping = false
+
+    channel.push('user:typing', {
+      typing: false
+    })
+  }
+
 
   let ul = document.getElementById('msg-list');  // list of messages.
   let name = document.getElementById('name');    // name of message sender

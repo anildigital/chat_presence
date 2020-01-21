@@ -12,6 +12,11 @@ Chat
     </div>
   </div>
 
+  <span>Users online</span>
+  <div id="users-online">
+  </div>
+
+
 <% end %>
 
 <script>window.roomId = "<%= @room.id %>";</script>
